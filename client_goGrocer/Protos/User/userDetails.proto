@@ -1,0 +1,26 @@
+syntax = "proto3";
+
+
+message Retailer_V_1_0ControllerRequest {
+string mobile = 1;
+}
+
+message XJsRetailerDetails_V_1_0 {
+string Retailerid = 1;
+string Retailername = 2;
+string address = 3;
+string email = 4;
+string mobileNo = 5;
+string syncid = 6;
+string roleid = 7;
+string userid = 8;
+string contactPerson = 9;
+string city = 10;
+string salesPerson = 11;
+string UserName = 12;
+string Pwd = 13;
+}
+
+message Retailer_V_1_0ControllerRequestlist {
+repeated XJsRetailerDetails_V_1_0 data = 1;
+}

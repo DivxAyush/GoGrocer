@@ -1,0 +1,47 @@
+{
+  "expo": {
+    "name": "GoGrocer",
+    "slug": "client_goGrocer",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#1A43BF"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.gogrocer.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#1A43BF"
+      },
+      "edgeToEdgeEnabled": false,
+      "package": "com.gogrocer.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-splash-screen",
+        {
+          "backgroundColor": "#1A43BF",
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "db3e2842-5c7a-45cf-9174-38634dc23751"
+      }
+    }
+  }
+}
