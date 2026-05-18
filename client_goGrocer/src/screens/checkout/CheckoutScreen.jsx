@@ -1,10 +1,22 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector } from 'react-redux';
 import { COLORS } from '../../theme';
+import { PRODUCTS_CATALOG } from '../../data/products';
 
 const CheckoutScreen = ({ navigation }) => {
   const [selectedPayment, setSelectedPayment] = useState('upi');
+  const cart = useSelector((state) => state.cart.items || {});
+
+  const CART_ITEMS = PRODUCTS_CATALOG.filter(product => cart[product.id] > 0).map(product => ({
+    ...product,
+    qty: cart[product.id]
+  }));
+
+  const itemTotal = CART_ITEMS.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const deliveryFee = itemTotal > 0 ? 20 : 0;
+  const toPay = itemTotal + deliveryFee;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -83,32 +95,27 @@ const CheckoutScreen = ({ navigation }) => {
         {/* Order Summary Preview */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Order Summary</Text>
-          <View style={styles.summaryItemRow}>
-            <Text style={styles.summaryItemName}>Amul Fresh Paneer 200g</Text>
-            <Text style={styles.summaryItemPrice}>₹88</Text>
-          </View>
-          <View style={styles.summaryItemRow}>
-            <Text style={styles.summaryItemName}>Steam Katarni Loose Rice 1 kg</Text>
-            <Text style={styles.summaryItemPrice}>₹53</Text>
-          </View>
-          <View style={styles.summaryItemRow}>
-            <Text style={styles.summaryItemName}>Tata Salt - 1kg</Text>
-            <Text style={styles.summaryItemPrice}>₹29</Text>
-          </View>
+          
+          {CART_ITEMS.map((item) => (
+            <View key={item.id} style={styles.summaryItemRow}>
+              <Text style={styles.summaryItemName}>{item.name} x{item.qty}</Text>
+              <Text style={styles.summaryItemPrice}>₹{item.price * item.qty}</Text>
+            </View>
+          ))}
           
           <View style={styles.divider} />
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Item Total</Text>
-            <Text style={styles.summaryValue}>₹170</Text>
+            <Text style={styles.summaryValue}>₹{itemTotal}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>₹20</Text>
+            <Text style={styles.summaryValue}>₹{deliveryFee}</Text>
           </View>
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>To Pay</Text>
-            <Text style={styles.totalValue}>₹190</Text>
+            <Text style={styles.totalValue}>₹{toPay}</Text>
           </View>
         </View>
 
@@ -122,9 +129,9 @@ const CheckoutScreen = ({ navigation }) => {
         </View>
         <TouchableOpacity 
           style={styles.continueButton} 
-          onPress={() => navigation.navigate('Payment')}
+          onPress={() => navigation.navigate('Payment', { amount: toPay })}
         >
-          <Text style={styles.continueButtonText}>Continue to Payment</Text>
+          <Text style={styles.continueButtonText}>Pay ₹{toPay}</Text>
         </TouchableOpacity>
       </View>
 

@@ -16,31 +16,36 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useDispatch } from 'react-redux';
-import { ShoppingCart, Leaf, Smartphone, Lock, Eye, EyeOff, ArrowRight, Apple } from 'lucide-react-native';
+import { ShoppingCart, Leaf, Smartphone, User, ArrowRight } from 'lucide-react-native';
 import { setMobileNumber } from '../../store/slices/authSlice';
 import { validateMobileNumber } from '../../common/validation';
 import { checkNetwork } from '../../common/network';
 
 const { width, height } = Dimensions.get('window');
 
-const LoginScreen = ({ navigation }) => {
+const RegisterScreen = ({ navigation }) => {
  const dispatch = useDispatch();
 
+ const [fullName, setFullName] = useState('');
  const [phoneNumber, setPhoneNumber] = useState('');
- const [errors, setErrors] = useState({ phone: '' });
+ const [errors, setErrors] = useState({ name: '', phone: '' });
  const [isSubmitting, setIsSubmitting] = useState(false);
 
+ const nameRef = useRef(null);
  const phoneRef = useRef(null);
 
+ const handleNameChange = (text) => {
+  setFullName(text);
+  if (errors.name) setErrors((prev) => ({ ...prev, name: '' }));
+ };
+
  const handlePhoneChange = (text) => {
-  // If the user typed a single invalid character (like '+')
+  // If the user typed a single invalid character
   if (text.length === phoneNumber.length + 1 && /[^0-9]/.test(text)) {
-   // Instantly revert native input to prevent flicker
    phoneRef.current?.setNativeProps({ text: phoneNumber });
    return;
   }
 
-  // For valid typing or pasting
   const cleaned = text.replace(/[^0-9]/g, '');
   if (text !== cleaned) {
    phoneRef.current?.setNativeProps({ text: cleaned });
@@ -49,15 +54,17 @@ const LoginScreen = ({ navigation }) => {
   if (errors.phone) setErrors((prev) => ({ ...prev, phone: '' }));
  };
 
- const handleLogin = async () => {
+ const handleRegister = async () => {
   const isConnected = await checkNetwork();
   if (!isConnected) return;
 
+  const isNameValid = fullName.trim().length >= 2;
   const phoneResult = validateMobileNumber(phoneNumber);
 
-  if (!phoneResult.valid) {
+  if (!isNameValid || !phoneResult.valid) {
    setErrors({
-    phone: phoneResult.message,
+    name: isNameValid ? '' : 'Full name must be at least 2 characters',
+    phone: phoneResult.valid ? '' : phoneResult.message,
    });
    return;
   }
@@ -116,11 +123,32 @@ const LoginScreen = ({ navigation }) => {
       {/* ── Form Card ─────────────────────────────── */}
       <View style={styles.formCard}>
        {/* Welcome */}
-       <Text style={styles.welcomeText}>Welcome Back</Text>
-       <Text style={styles.welcomeSub}>Login to continue to your account</Text>
+       <Text style={styles.welcomeText}>Create Account</Text>
+       <Text style={styles.welcomeSub}>Sign up to get started on GoGrocer</Text>
+
+       {/* Full Name */}
+       <View style={[styles.inputWrapper, errors.name ? styles.inputWrapperError : null]}>
+        <User
+         size={20}
+         color="rgba(255,255,255,0.7)"
+         style={styles.inputIcon}
+        />
+        <TextInput
+         ref={nameRef}
+         style={styles.input}
+         placeholder="Full Name"
+         placeholderTextColor="rgba(255,255,255,0.5)"
+         value={fullName}
+         onChangeText={handleNameChange}
+         returnKeyType="next"
+         onSubmitEditing={() => phoneRef.current?.focus()}
+         selectionColor="#FFFFFF"
+        />
+       </View>
+       {errors.name ? <Text style={styles.errorText}>⚠ {errors.name}</Text> : null}
 
        {/* Mobile Number */}
-       <View style={[styles.inputWrapper, errors.phone ? styles.inputWrapperError : null]}>
+       <View style={[styles.inputWrapper, errors.phone ? styles.inputWrapperError : null, { marginTop: 14 }]}>
         <Smartphone
          size={20}
          color="rgba(255,255,255,0.7)"
@@ -131,22 +159,22 @@ const LoginScreen = ({ navigation }) => {
          ref={phoneRef}
          style={styles.input}
          placeholder="Mobile Number"
-          placeholderTextColor="rgba(255,255,255,0.5)"
-          keyboardType="number-pad"
-          value={phoneNumber}
-          onChangeText={handlePhoneChange}
-          maxLength={10}
-          returnKeyType="done"
-          onSubmitEditing={handleLogin}
-          selectionColor="#FFFFFF"
+         placeholderTextColor="rgba(255,255,255,0.5)"
+         keyboardType="number-pad"
+         value={phoneNumber}
+         onChangeText={handlePhoneChange}
+         maxLength={10}
+         returnKeyType="done"
+         onSubmitEditing={handleRegister}
+         selectionColor="#FFFFFF"
         />
        </View>
        {errors.phone ? <Text style={styles.errorText}>⚠ {errors.phone}</Text> : null}
 
-       {/* Login Button */}
+       {/* Register Button */}
        <TouchableOpacity
         style={[styles.loginBtn, { marginTop: 24 }, isSubmitting && { opacity: 0.8 }]}
-        onPress={handleLogin}
+        onPress={handleRegister}
         disabled={isSubmitting}
         activeOpacity={0.85}
        >
@@ -160,7 +188,7 @@ const LoginScreen = ({ navigation }) => {
           <ActivityIndicator color="#FFFFFF" size="small" />
          ) : (
           <>
-           <Text style={styles.loginBtnText}>Login</Text>
+           <Text style={styles.loginBtnText}>Register</Text>
            <View style={styles.loginArrowCircle}>
             <ArrowRight size={18} color="#1A43BF" />
            </View>
@@ -169,11 +197,11 @@ const LoginScreen = ({ navigation }) => {
         </LinearGradient>
        </TouchableOpacity>
 
-       {/* Sign Up link */}
+       {/* Login link */}
        <View style={styles.signupRow}>
-        <Text style={styles.signupText}>Don't have an account? </Text>
-        <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-         <Text style={styles.signupLink}>Sign Up</Text>
+        <Text style={styles.signupText}>Already have an account? </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+         <Text style={styles.signupLink}>Login</Text>
         </TouchableOpacity>
        </View>
       </View>
@@ -346,24 +374,11 @@ const styles = StyleSheet.create({
   color: '#FFFFFF',
   paddingVertical: 0,
  },
- eyeBtn: {
-  padding: 4,
- },
  errorText: {
   color: '#FFB3B3',
   fontSize: 12,
   marginTop: 5,
   marginLeft: 4,
- },
- forgotBtn: {
-  alignSelf: 'flex-end',
-  marginTop: 10,
-  marginBottom: 20,
- },
- forgotText: {
-  color: '#93C5FD',
-  fontSize: 13,
-  fontWeight: '600',
  },
 
  // Login button
@@ -400,61 +415,12 @@ const styles = StyleSheet.create({
   alignItems: 'center',
  },
 
- // Divider
- dividerRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginBottom: 16,
-  gap: 8,
- },
- divider: {
-  flex: 1,
-  height: 1,
-  backgroundColor: 'rgba(255,255,255,0.25)',
- },
- dividerText: {
-  fontSize: 12,
-  color: 'rgba(255,255,255,0.65)',
- },
-
- // Social
- socialRow: {
-  flexDirection: 'row',
-  gap: 12,
-  marginBottom: 20,
- },
- socialBtn: {
-  flex: 1,
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  gap: 8,
-  height: 50,
-  borderRadius: 14,
-  backgroundColor: 'rgba(255,255,255,0.92)',
-  borderWidth: 1,
-  borderColor: 'rgba(255,255,255,0.4)',
- },
- appleBtnDark: {
-  backgroundColor: '#1E1E1E',
-  borderColor: 'rgba(255,255,255,0.2)',
- },
- googleG: {
-  fontSize: 16,
-  fontWeight: '900',
-  color: '#4285F4',
- },
- socialBtnText: {
-  fontSize: 14,
-  fontWeight: '600',
-  color: '#1E293B',
- },
-
  // Sign up
  signupRow: {
   flexDirection: 'row',
   justifyContent: 'center',
   alignItems: 'center',
+  marginTop: 10,
  },
  signupText: {
   fontSize: 14,
@@ -495,4 +461,4 @@ const styles = StyleSheet.create({
  },
 });
 
-export default LoginScreen;
+export default RegisterScreen;

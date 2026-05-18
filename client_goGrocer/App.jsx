@@ -10,8 +10,11 @@ import { store, persistor } from './src/store';
 import SplashScreen from './src/screens/auth/SplashScreen.jsx';
 import OnboardingScreen from './src/screens/auth/OnboardingScreen.jsx';
 import LoginScreen from './src/screens/auth/LoginScreen.jsx';
+import RegisterScreen from './src/screens/auth/RegisterScreen.jsx';
 import OTPVerificationScreen from './src/screens/auth/OTPVerificationScreen.jsx';
-import TabNavigator from './src/navigation/TabNavigator.jsx';
+import HomeScreen from './src/screens/home/HomeScreen.jsx';
+import CartScreen from './src/screens/cart/CartScreen.jsx';
+import ProfileScreen from './src/screens/profile/ProfileScreen.jsx';
 import SearchScreen from './src/screens/home/SearchScreen.jsx';
 import CategoryListingScreen from './src/screens/product/CategoryListingScreen.jsx';
 import ProductDetailsScreen from './src/screens/product/ProductDetailsScreen.jsx';
@@ -24,6 +27,7 @@ import OrderDetailsScreen from './src/screens/orders/OrderDetailsScreen.jsx';
 import OffersScreen from './src/screens/profile/OffersScreen.jsx';
 import StoreClosedScreen from './src/screens/home/StoreClosedScreen.jsx';
 import GlobalToast from './src/components/GlobalToast.jsx';
+import GlobalNetworkPopup from './src/components/GlobalNetworkPopup.jsx';
 
 // Keep expo splash hidden as soon as JS runs — we show our own SplashScreen
 SplashScreenExpo.preventAutoHideAsync();
@@ -36,8 +40,11 @@ function AppNavigator() {
       <Stack.Screen name="Splash" component={SplashScreen} />
       <Stack.Screen name="Onboarding" component={OnboardingScreen} />
       <Stack.Screen name="Login" component={LoginScreen} />
+      <Stack.Screen name="Register" component={RegisterScreen} />
       <Stack.Screen name="OTPVerification" component={OTPVerificationScreen} />
-      <Stack.Screen name="HomeStack" component={TabNavigator} />
+      <Stack.Screen name="Home" component={HomeScreen} />
+      <Stack.Screen name="Cart" component={CartScreen} />
+      <Stack.Screen name="Profile" component={ProfileScreen} />
       <Stack.Screen name="Search" component={SearchScreen} />
       <Stack.Screen name="CategoryListing" component={CategoryListingScreen} />
       <Stack.Screen name="ProductDetails" component={ProductDetailsScreen} />
@@ -67,6 +74,7 @@ export default function App() {
             <AppNavigator />
           </NavigationContainer>
           <GlobalToast />
+          <GlobalNetworkPopup />
         </SafeAreaProvider>
       </PersistGate>
     </Provider>

@@ -1,18 +1,52 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector, useDispatch } from 'react-redux';
 import { COLORS } from '../../theme';
+import { PRODUCTS_CATALOG } from '../../data/products';
+import { incrementItem, decrementItem } from '../../store/slices/cartSlice';
 
 const { width } = Dimensions.get('window');
 
-// Dummy Cart Data
-const CART_ITEMS = [
-  { id: '1', name: 'Amul Fresh Paneer', weight: '200 g', price: 88, oldPrice: null, qty: 1 },
-  { id: '2', name: 'Steam Katarni Loose Rice', weight: '1 kg', price: 53, oldPrice: 106, qty: 1 },
-  { id: '3', name: 'Tata Salt - 1kg', weight: '1 kg', price: 29, oldPrice: null, qty: 1 },
-];
-
 const CartScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const cart = useSelector((state) => state.cart.items || {});
+
+  // Build items list dynamically based on global state
+  const CART_ITEMS = PRODUCTS_CATALOG.filter(product => cart[product.id] > 0).map(product => ({
+    ...product,
+    qty: cart[product.id]
+  }));
+
+  const itemTotal = CART_ITEMS.reduce((sum, item) => sum + item.price * item.qty, 0);
+  const savings = CART_ITEMS.reduce((sum, item) => sum + (item.oldPrice ? (item.oldPrice - item.price) * item.qty : 0), 0);
+  const deliveryFee = itemTotal > 0 ? 20 : 0;
+  const toPay = itemTotal + deliveryFee;
+
+  if (CART_ITEMS.length === 0) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Text style={styles.backIcon}>←</Text>
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>My Cart</Text>
+        </View>
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyEmoji}>🛒</Text>
+          <Text style={styles.emptyTitle}>Your cart is empty</Text>
+          <Text style={styles.emptySubtitle}>Add items to start shopping!</Text>
+          <TouchableOpacity 
+            style={styles.startShoppingBtn} 
+            onPress={() => navigation.navigate('Home')}
+          >
+            <Text style={styles.startShoppingBtnText}>Start Shopping</Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
@@ -26,11 +60,13 @@ const CartScreen = ({ navigation }) => {
         
         {/* Items List */}
         <View style={styles.section}>
-          <Text style={styles.itemsCount}>3 Items</Text>
+          <Text style={styles.itemsCount}>{CART_ITEMS.length} Item{CART_ITEMS.length > 1 ? 's' : ''}</Text>
           
           {CART_ITEMS.map((item, index) => (
             <View key={item.id} style={styles.cartItem}>
-              <View style={styles.itemImage}></View>
+              <View style={[styles.itemImage, { backgroundColor: item.color, justifyContent: 'center', alignItems: 'center' }]}>
+                <Text style={{ fontSize: 24 }}>{item.emoji}</Text>
+              </View>
               <View style={styles.itemDetails}>
                 <Text style={styles.itemName}>{item.name}</Text>
                 <Text style={styles.itemWeight}>{item.weight}</Text>
@@ -40,9 +76,13 @@ const CartScreen = ({ navigation }) => {
                 </View>
               </View>
               <View style={styles.qtyControl}>
-                <TouchableOpacity style={styles.qtyBtn}><Text style={styles.qtyBtnText}>-</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.qtyBtn} onPress={() => dispatch(decrementItem(item.id))}>
+                  <Text style={styles.qtyBtnText}>-</Text>
+                </TouchableOpacity>
                 <Text style={styles.qtyText}>{item.qty}</Text>
-                <TouchableOpacity style={styles.qtyBtn}><Text style={styles.qtyBtnText}>+</Text></TouchableOpacity>
+                <TouchableOpacity style={styles.qtyBtn} onPress={() => dispatch(incrementItem(item.id))}>
+                  <Text style={styles.qtyBtnText}>+</Text>
+                </TouchableOpacity>
               </View>
             </View>
           ))}
@@ -58,20 +98,22 @@ const CartScreen = ({ navigation }) => {
 
         {/* Order Summary */}
         <View style={styles.summarySection}>
-          <Text style={styles.savingsText}>You saved ₹20 on this order</Text>
+          {savings > 0 && (
+            <Text style={styles.savingsText}>You saved ₹{savings} on this order</Text>
+          )}
           
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Item Total</Text>
-            <Text style={styles.summaryValue}>₹170</Text>
+            <Text style={styles.summaryValue}>₹{itemTotal}</Text>
           </View>
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Delivery Fee</Text>
-            <Text style={styles.summaryValue}>₹20</Text>
+            <Text style={styles.summaryValue}>₹{deliveryFee}</Text>
           </View>
           
           <View style={[styles.summaryRow, styles.totalRow]}>
             <Text style={styles.totalLabel}>To Pay</Text>
-            <Text style={styles.totalValue}>₹190</Text>
+            <Text style={styles.totalValue}>₹{toPay}</Text>
           </View>
         </View>
 
@@ -81,7 +123,7 @@ const CartScreen = ({ navigation }) => {
       <View style={styles.checkoutBar}>
         <View style={styles.checkoutPriceInfo}>
           <Text style={styles.checkoutTotalLabel}>To Pay</Text>
-          <Text style={styles.checkoutTotalValue}>₹190</Text>
+          <Text style={styles.checkoutTotalValue}>₹{toPay}</Text>
         </View>
         <TouchableOpacity style={styles.checkoutButton} onPress={() => navigation.navigate('Checkout')}>
           <Text style={styles.checkoutButtonText}>Checkout</Text>
@@ -284,6 +326,40 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    backgroundColor: COLORS.background,
+  },
+  emptyEmoji: {
+    fontSize: 64,
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: COLORS.textPrimary,
+    marginBottom: 8,
+  },
+  emptySubtitle: {
+    fontSize: 14,
+    color: COLORS.textSecondary,
+    marginBottom: 24,
+    textAlign: 'center',
+  },
+  startShoppingBtn: {
+    backgroundColor: COLORS.primary,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+    borderRadius: 8,
+  },
+  startShoppingBtnText: {
+    color: COLORS.textLight,
+    fontWeight: 'bold',
+    fontSize: 15,
   },
 });
 

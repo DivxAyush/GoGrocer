@@ -11,7 +11,8 @@ const PAYMENT_METHODS = [
   { id: 'cod', title: 'Cash on Delivery', icon: '💵' },
 ];
 
-const PaymentScreen = ({ navigation }) => {
+const PaymentScreen = ({ navigation, route }) => {
+  const amount = route?.params?.amount || 190;
   const [selectedMethod, setSelectedMethod] = useState('upi');
 
   const handlePayment = () => {
@@ -36,7 +37,7 @@ const PaymentScreen = ({ navigation }) => {
         {/* Amount Payable */}
         <View style={styles.amountSection}>
           <Text style={styles.amountLabel}>Amount Payable</Text>
-          <Text style={styles.amountValue}>₹190</Text>
+          <Text style={styles.amountValue}>₹{amount}</Text>
         </View>
 
         {/* Recommended Section */}
@@ -94,7 +95,7 @@ const PaymentScreen = ({ navigation }) => {
           style={styles.payButton} 
           onPress={handlePayment}
         >
-          <Text style={styles.payButtonText}>Pay ₹190</Text>
+          <Text style={styles.payButtonText}>Pay ₹{amount}</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

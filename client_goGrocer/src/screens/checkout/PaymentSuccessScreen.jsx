@@ -7,7 +7,7 @@ const PaymentSuccessScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.navigate('HomeStack')} style={styles.backButton}>
+        <TouchableOpacity onPress={() => navigation.navigate('Home')} style={styles.backButton}>
           <Text style={styles.backIcon}>✕</Text>
         </TouchableOpacity>
       </View>
@@ -37,7 +37,7 @@ const PaymentSuccessScreen = ({ navigation }) => {
         
         <TouchableOpacity 
           style={styles.continueShoppingButton} 
-          onPress={() => navigation.navigate('HomeStack')}
+          onPress={() => navigation.navigate('Home')}
         >
           <Text style={styles.continueShoppingText}>Continue Shopping</Text>
         </TouchableOpacity>

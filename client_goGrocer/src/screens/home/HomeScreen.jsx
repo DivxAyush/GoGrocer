@@ -1,11 +1,35 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, TextInput, StatusBar } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSelector, useDispatch } from 'react-redux';
+import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
+import { User, ArrowRight } from 'lucide-react-native';
 import { COLORS, TYPOGRAPHY } from '../../theme';
+import { incrementItem, decrementItem } from '../../store/slices/cartSlice';
+
+import { PRODUCTS_CATALOG } from '../../data/products';
+
+const PRODUCTS = PRODUCTS_CATALOG;
 
 const HomeScreen = ({ navigation }) => {
+  const dispatch = useDispatch();
+  const cart = useSelector((state) => state.cart.items || {});
+
+  const handleIncrement = (productId) => {
+    dispatch(incrementItem(productId));
+  };
+
+  const handleDecrement = (productId) => {
+    dispatch(decrementItem(productId));
+  };
+
+  const totalItems = Object.values(cart).reduce((sum, qty) => sum + qty, 0);
+  const addedProducts = PRODUCTS.filter(p => cart[p.id] > 0);
+  const totalPrice = addedProducts.reduce((sum, p) => sum + p.price * cart[p.id], 0);
+
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: COLORS.primary }]} edges={['top']}>
+      <StatusBar barStyle="light-content" backgroundColor={COLORS.primary} />
       {/* Header Section */}
       <View style={styles.header}>
         <View style={styles.headerTop}>
@@ -13,15 +37,19 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.locationTitle}>Store opens at 7 AM</Text>
             <Text style={styles.locationSubtitle}>Shiva Main Road, Ashok Kunj, Shyamali...</Text>
           </View>
-          <TouchableOpacity style={styles.profileIcon}>
-            <Text style={{color: COLORS.textLight, fontSize: 16}}>A</Text>
+          <TouchableOpacity
+            style={styles.headerButton}
+            onPress={() => navigation.navigate('Profile')}
+            activeOpacity={0.7}
+          >
+            <User size={20} color={COLORS.textLight} />
           </TouchableOpacity>
         </View>
-        
+
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <Text style={styles.searchIcon}>🔍</Text>
-          <TextInput 
+          <TextInput
             style={styles.searchInput}
             placeholder="Search for 'Milk'"
             placeholderTextColor={COLORS.textSecondary}
@@ -29,8 +57,9 @@ const HomeScreen = ({ navigation }) => {
         </View>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-        
+      <View style={{ flex: 1, backgroundColor: COLORS.backgroundLight }}>
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+
         {/* Categories Row */}
         <View style={styles.categoriesRow}>
           {['All', 'Summer', 'Deals', 'Fresh', 'Rice'].map((item, index) => (
@@ -58,26 +87,80 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.viewAllText}>View All {'>'}</Text>
           </TouchableOpacity>
         </View>
-        
+
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.horizontalScroll}>
-           {/* Dummy Product Cards */}
-           {[1, 2, 3].map((item) => (
-             <View key={item} style={styles.productCard}>
-               <View style={styles.productImage}></View>
-               <Text style={styles.productName}>White Crystal Sugar</Text>
-               <Text style={styles.productWeight}>1 kg</Text>
-               <View style={styles.priceRow}>
-                 <Text style={styles.price}>₹49</Text>
-                 <Text style={styles.oldPrice}>₹55</Text>
-               </View>
-               <TouchableOpacity style={styles.addButton}>
-                 <Text style={styles.addButtonText}>ADD</Text>
-               </TouchableOpacity>
-             </View>
-           ))}
+          {PRODUCTS.map((product) => {
+            const qty = cart[product.id] || 0;
+            return (
+              <View key={product.id} style={styles.productCard}>
+                <View style={[styles.productImage, { backgroundColor: product.color, justifyContent: 'center', alignItems: 'center' }]}>
+                  <Text style={{ fontSize: 44 }}>{product.emoji}</Text>
+                </View>
+                <Text style={styles.productName} numberOfLines={1}>{product.name}</Text>
+                <Text style={styles.productWeight}>{product.weight}</Text>
+                <View style={styles.priceRow}>
+                  <Text style={styles.price}>₹{product.price}</Text>
+                  {product.oldPrice && <Text style={styles.oldPrice}>₹{product.oldPrice}</Text>}
+                </View>
+
+                {qty > 0 ? (
+                  <View style={styles.qtyControlSmall}>
+                    <TouchableOpacity onPress={() => handleDecrement(product.id)} style={styles.qtyBtnSmall}>
+                      <Text style={styles.qtyBtnTextSmall}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.qtyTextSmall}>{qty}</Text>
+                    <TouchableOpacity onPress={() => handleIncrement(product.id)} style={styles.qtyBtnSmall}>
+                      <Text style={styles.qtyBtnTextSmall}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                ) : (
+                  <TouchableOpacity onPress={() => handleIncrement(product.id)} style={styles.addButton}>
+                    <Text style={styles.addButtonText}>ADD</Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            );
+          })}
         </ScrollView>
 
       </ScrollView>
+
+      {/* Floating Bottom Cart Bar (Zepto Style) */}
+      {totalItems > 0 && (
+        <Animated.View
+          entering={FadeInDown.duration(300)}
+          exiting={FadeOutDown.duration(300)}
+          style={styles.cartBarContainer}
+        >
+          <View style={styles.cartBarLeft}>
+            <View style={styles.cartThumbsRow}>
+              {addedProducts.map((p) => (
+                <View key={p.id} style={[styles.cartMiniThumb, { backgroundColor: p.color }]}>
+                  <Text style={styles.cartMiniEmoji}>{p.emoji}</Text>
+                </View>
+              ))}
+            </View>
+            <View style={styles.cartTextContainer}>
+              <Text style={styles.cartBarTitle}>
+                {totalItems} Item{totalItems > 1 ? 's' : ''} Added
+              </Text>
+              <Text style={styles.cartBarSubtitle}>
+                ₹{totalPrice} • View Cart
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity
+            style={styles.viewCartBtn}
+            onPress={() => navigation.navigate('Cart')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.viewCartText}>View Cart</Text>
+            <ArrowRight size={16} color="#FFFFFF" />
+          </TouchableOpacity>
+        </Animated.View>
+      )}
+      </View>
     </SafeAreaView>
   );
 };
@@ -112,7 +195,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     opacity: 0.8,
   },
-  profileIcon: {
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -269,6 +356,108 @@ const styles = StyleSheet.create({
     color: COLORS.textLight,
     fontWeight: 'bold',
     fontSize: 12,
+  },
+
+  // Qty Selector inside Product Cards
+  qtyControlSmall: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.primary,
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  qtyBtnSmall: {
+    paddingHorizontal: 6,
+  },
+  qtyBtnTextSmall: {
+    color: COLORS.textLight,
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  qtyTextSmall: {
+    color: COLORS.textLight,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+
+  // Zepto Floating Bottom Cart Bar
+  cartBarContainer: {
+    position: 'absolute',
+    bottom: 24,
+    left: 16,
+    right: 16,
+    backgroundColor: '#10B981', // Emerald green
+    borderRadius: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
+    zIndex: 9999,
+  },
+  cartBarLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  cartThumbsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  cartMiniThumb: {
+    width: 28,
+    height: 28,
+    borderRadius: 6,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+    marginRight: -10, // Stacked thumbnails
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  cartMiniEmoji: {
+    fontSize: 14,
+  },
+  cartTextContainer: {
+    marginLeft: 18,
+  },
+  cartBarTitle: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: 'bold',
+    letterSpacing: 0.2,
+  },
+  cartBarSubtitle: {
+    color: 'rgba(255, 255, 255, 0.85)',
+    fontSize: 11,
+    fontWeight: '600',
+  },
+  viewCartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 255, 255, 0.18)',
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.25)',
+  },
+  viewCartText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 13,
+    marginRight: 6,
   },
 });
 

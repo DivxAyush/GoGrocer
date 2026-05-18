@@ -6,7 +6,7 @@ const getHeaders = () => { return { 'Content-Type': 'application/x-protobuf', 'A
 export const postProto = async (url, payload, protoStr, reqMsgName, resMsgName) => {
  try {
   console.log(`[API POST] Requesting ${url}`, "Payload:", payload);
-  const root = protobuf.parse(protoStr).root;
+  const root = protobuf.parse(protoStr).root; //.proto string ko parse karta hai.
   const ReqType = root.lookupType(reqMsgName);
   const ResType = root.lookupType(resMsgName);
 

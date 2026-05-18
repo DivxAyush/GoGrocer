@@ -16,7 +16,7 @@ export const checkPassword = (password, expected = '1234') => {
   return { valid: true, message: '' };
 };
 
-export const validateOTP = (otp, length = 6) => {
+export const validateOTP = (otp, length = 4) => {
   const otpStr = Array.isArray(otp) ? otp.join('') : otp;
   if (!otpStr || !otpStr.trim()) return { valid: false, message: 'Please enter OTP' };
   if (otpStr.length !== length || !/^\d+$/.test(otpStr)) return { valid: false, message: `OTP must be ${length} digits` };

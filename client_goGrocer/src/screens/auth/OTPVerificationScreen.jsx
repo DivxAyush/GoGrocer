@@ -1,15 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
- View,
- Text,
- StyleSheet,
- TextInput,
- TouchableOpacity,
- KeyboardAvoidingView,
- Platform,
- Dimensions,
- StatusBar,
- ActivityIndicator,
+  View, Text, StyleSheet, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, Dimensions, StatusBar, ActivityIndicator, Keyboard,
 } from 'react-native';
 import Animated, { FadeInDown, FadeIn, ZoomIn } from 'react-native-reanimated';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -18,6 +9,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { ShoppingCart, Leaf, Shield, ArrowLeft } from 'lucide-react-native';
 import { loginSuccess } from '../../store/slices/authSlice';
 import { validateOTP } from '../../common/validation';
+import { checkNetwork } from '../../common/network';
 import { postProto } from '../../common/api';
 import userDetailsProto from '../../../Protos/User/userDetails.proto';
 import { showToast } from '../../components/GlobalToast';
@@ -29,10 +21,20 @@ const OTPVerificationScreen = ({ navigation, route }) => {
  const mobileNumber = useSelector((state) => state.auth.mobileNumber);
  const phone = route?.params?.phone || mobileNumber || '';
 
- const [otp, setOtp] = useState(['', '', '', '', '', '']);
+ const [otp, setOtp] = useState(['', '', '', '']);
  const [timer, setTimer] = useState(30);
  const [otpError, setOtpError] = useState('');
  const [isLoading, setIsLoading] = useState(false);
+
+ const inputRef = useRef(null);
+
+ // Focus once on mount
+ useEffect(() => {
+  const t = setTimeout(() => {
+   inputRef.current?.focus();
+  }, 150);
+  return () => clearTimeout(t);
+ }, []);
 
  // Timer countdown
  useEffect(() => {
@@ -45,15 +47,15 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
  // Auto-submit when all 6 digits entered
  useEffect(() => {
-  if (otp.join('').length === 6 && !isLoading) {
+  if (otp.join('').length === 4 && !isLoading) {
    handleVerify();
   }
  }, [otp]);
 
  const handleOtpChange = (text) => {
   const clean = text.replace(/[^0-9]/g, '');
-  const newOtp = ['', '', '', '', '', ''];
-  for (let i = 0; i < Math.min(clean.length, 6); i++) {
+  const newOtp = ['', '', '', ''];
+  for (let i = 0; i < Math.min(clean.length, 4); i++) {
    newOtp[i] = clean[i];
   }
   setOtp(newOtp);
@@ -63,14 +65,19 @@ const OTPVerificationScreen = ({ navigation, route }) => {
  const handleResend = () => {
   if (timer > 0) return;
   setTimer(30);
-  setOtp(['', '', '', '', '', '']);
+  setOtp(['', '', '', '']);
   setOtpError('');
  };
 
  const handleVerify = async () => {
-  const otpResult = validateOTP(otp);
+  const isConnected = await checkNetwork();
+  if (!isConnected) return;
+
+  const otpResult = validateOTP(otp, 4);
   if (!otpResult.valid) {
    setOtpError(otpResult.message);
+   Keyboard.dismiss();
+   inputRef.current?.blur();
    return;
   }
 
@@ -88,16 +95,20 @@ const OTPVerificationScreen = ({ navigation, route }) => {
     showToast({ type: 'success', message: 'OTP Verified Successfully!' });
     dispatch(loginSuccess(result.data[0]));
     setIsLoading(false);
-    navigation.reset({ index: 0, routes: [{ name: 'HomeStack' }] });
+    navigation.reset({ index: 0, routes: [{ name: 'Home' }] });
    } else {
     setIsLoading(false);
-    setOtp(['', '', '', '', '', '']);
+    setOtp(['', '', '', '']);
+    Keyboard.dismiss();
+    inputRef.current?.blur();
     showToast({ type: 'error', message: 'Verification failed. Try again.' });
    }
   } catch (error) {
    setIsLoading(false);
-   setOtp(['', '', '', '', '', '']);
-   showToast({ type: 'error', message: 'Network error. Please try again.' });
+   setOtp(['', '', '', '']);
+   Keyboard.dismiss();
+    inputRef.current?.blur();
+    showToast({ type: 'error', message: 'Network error. Please try again.' });
   }
  };
 
@@ -165,7 +176,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
        <Text style={styles.title}>OTP Verification</Text>
        <Text style={styles.subtitle}>
-        Enter the 6-digit code sent to{'\n'}
+        Enter the 4-digit code sent to{'\n'}
         <Text style={styles.phoneHighlight}>{formattedPhone}</Text>
        </Text>
 
@@ -177,21 +188,25 @@ const OTPVerificationScreen = ({ navigation, route }) => {
        ) : (
         <>
          {/* Hidden input captures all digits */}
-         <View style={styles.otpWrapper}>
-          <TextInput
-           style={styles.hiddenInput}
-           value={otp.join('')}
-           onChangeText={handleOtpChange}
-           keyboardType="number-pad"
-           maxLength={6}
-           autoFocus={true}
-           caretHidden={true}
-           selectionColor="transparent"
-          />
+          <TouchableOpacity
+           activeOpacity={1}
+           onPress={() => inputRef.current?.focus()}
+           style={styles.otpWrapper}
+          >
+           <TextInput
+            ref={inputRef}
+            style={styles.hiddenInput}
+            value={otp.join('')}
+            onChangeText={handleOtpChange}
+            keyboardType="number-pad"
+            maxLength={4}
+             caretHidden={true}
+            selectionColor="transparent"
+           />
 
           {/* Visual OTP boxes */}
           <View style={styles.otpBoxRow} pointerEvents="none">
-           {[0, 1, 2, 3, 4, 5].map((index) => {
+           {[0, 1, 2, 3].map((index) => {
             const digit = otp[index] || '';
             const isFilled = !!digit;
             const isActive = filledCount === index;
@@ -219,8 +234,8 @@ const OTPVerificationScreen = ({ navigation, route }) => {
              </Animated.View>
             );
            })}
-          </View>
-         </View>
+           </View>
+          </TouchableOpacity>
 
          {otpError ? (
           <Animated.Text entering={FadeIn.duration(200)} style={styles.errorText}>
@@ -230,7 +245,7 @@ const OTPVerificationScreen = ({ navigation, route }) => {
 
          {/* Progress bar */}
          <View style={styles.progressBar}>
-          <View style={[styles.progressFill, { width: `${(filledCount / 6) * 100}%` }]} />
+          <View style={[styles.progressFill, { width: `${(filledCount / 4) * 100}%` }]} />
          </View>
 
          {/* Resend */}
@@ -428,18 +443,19 @@ const styles = StyleSheet.create({
   zIndex: 10,
  },
  otpBoxRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  width: '100%',
- },
+   flexDirection: 'row',
+   justifyContent: 'center',
+   gap: 16,
+   width: '100%',
+  },
  otpBox: {
-  width: (width - 48 - 60) / 6,
-  height: 54,
-  borderRadius: 14,
-  backgroundColor: 'rgba(255,255,255,0.12)',
-  borderWidth: 1.5,
-  borderColor: 'rgba(255,255,255,0.25)',
-  justifyContent: 'center',
+   width: 60,
+   height: 60,
+   borderRadius: 14,
+   backgroundColor: 'rgba(255,255,255,0.12)',
+   borderWidth: 1.5,
+   borderColor: 'rgba(255,255,255,0.25)',
+   justifyContent: 'center',
   alignItems: 'center',
  },
  otpBoxFilled: {
